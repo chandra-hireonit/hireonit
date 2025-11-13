@@ -120,6 +120,10 @@ export default function Page() {
     return Math.min(1.0, Math.pow(rawValue, 0.5) * 2.5);
   }, [conversation]);
 
+  const hasAllParams = Boolean(
+    agentIdParam && userIdParam && jobIdParam && clientNameParam
+  );
+
   return (
     <Card className="flex h-[400px] w-full flex-col items-center justify-center overflow-hidden p-6">
       <div className="flex flex-col items-center gap-6">
@@ -194,47 +198,61 @@ export default function Page() {
           </AnimatePresence>
         </div>
 
-        <Button
-          onClick={handleCall}
-          disabled={isTransitioning}
-          size="icon"
-          variant={isCallActive ? "secondary" : "default"}
-          className="h-12 w-12 rounded-full"
-        >
-          <AnimatePresence mode="wait">
-            {isTransitioning ? (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0, rotate: 0 }}
-                animate={{ opacity: 1, rotate: 360 }}
-                exit={{ opacity: 0 }}
-                transition={{
-                  rotate: { duration: 1, repeat: Infinity, ease: "linear" },
-                }}
-              >
-                <Loader2Icon className="h-5 w-5" />
-              </motion.div>
-            ) : isCallActive ? (
-              <motion.div
-                key="end"
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.5 }}
-              >
-                <PhoneOffIcon className="h-5 w-5" />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="start"
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.5 }}
-              >
-                <PhoneIcon className="h-5 w-5" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Button>
+        {hasAllParams ? (
+          <Button
+            onClick={handleCall}
+            disabled={isTransitioning}
+            size="icon"
+            variant={isCallActive ? "secondary" : "default"}
+            className="h-12 w-12 rounded-full"
+          >
+            <AnimatePresence mode="wait">
+              {isTransitioning ? (
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0, rotate: 0 }}
+                  animate={{ opacity: 1, rotate: 360 }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    rotate: { duration: 1, repeat: Infinity, ease: "linear" },
+                  }}
+                >
+                  <Loader2Icon className="h-5 w-5" />
+                </motion.div>
+              ) : isCallActive ? (
+                <motion.div
+                  key="end"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                >
+                  <PhoneOffIcon className="h-5 w-5" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="start"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                >
+                  <PhoneIcon className="h-5 w-5" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Button>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center text-sm text-muted-foreground"
+          >
+            <p>Invalid or expired link</p>
+            <p className="text-xs mt-2 text-muted-foreground/80">
+              Please check the link in the email you received. If the link is
+              correct but still doesn't work, contact our support team .
+            </p>
+          </motion.div>
+        )}
       </div>
     </Card>
   );
