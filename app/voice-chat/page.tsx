@@ -54,7 +54,7 @@ export default function Page() {
       setErrorMessage(null);
       await navigator.mediaDevices.getUserMedia({ audio: true });
       await conversation.startSession({
-        agentId: agentId || DEFAULT_AGENT.agentId,
+        agentId: agentId || "unknown_agent",
         dynamicVariables: {
           user_id: userId || "unknown_user",
           job_id: jobId || "unknown_job",
