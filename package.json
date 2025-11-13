@@ -1,6 +1,7 @@
 {
-  "name": "next-front-end",
+  "name": "hireonit-frontend",
   "version": "0.1.0",
+  "description": "Hire On It frontend application",
   "private": true,
   "scripts": {
     "dev": "next dev",

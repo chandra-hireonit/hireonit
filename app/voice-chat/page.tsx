@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Orb } from "@/components/ui/orb";
 import { ShimmeringText } from "@/components/ui/shimmering-text";
+import { useSearchParams } from "next/navigation";
 
 const DEFAULT_AGENT = {
   agentId: "agent_01k03sadvvf8vakbhkfzws1yn5",
-  name: "Ambition Hire Verbly",
-  description: "Tap to start voice interview with Verbly.",
+  name: "Hire On It Interview Bot",
+  description: "Tap to start a voice interview with Hire On It.",
 };
 
 type AgentState =
@@ -28,6 +29,12 @@ export default function Page() {
   const [agentState, setAgentState] = useState<AgentState>("disconnected");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
+
+  const searchParams = useSearchParams();
+  const userId = searchParams.get("var_user_id");
+  const jobId = searchParams.get("var_job_id");
+  const clientName = searchParams.get("var_client_name");
+
   const conversation = useConversation({
     onConnect: () => console.log("Connected"),
     onDisconnect: () => {
@@ -47,6 +54,11 @@ export default function Page() {
       await navigator.mediaDevices.getUserMedia({ audio: true });
       await conversation.startSession({
         agentId: DEFAULT_AGENT.agentId,
+        dynamicVariables: {
+          user_id: userId || "unknown_user",
+          job_id: jobId || "unknown_job",
+          client_name: clientName || "unknown_client",
+        },
         connectionType: "webrtc",
         onStatusChange: (status) => setAgentState(status.status),
       });
