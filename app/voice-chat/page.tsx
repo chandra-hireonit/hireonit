@@ -125,7 +125,7 @@ export default function Page() {
   );
 
   return (
-    <Card className="flex h-[400px] w-full flex-col items-center justify-center overflow-hidden p-6">
+    <Card className="flex h-screen w-screen flex-col items-center justify-center overflow-hidden p-6 rounded-none border-0">
       <div className="flex flex-col items-center gap-6">
         <Suspense fallback={null}>
           <SearchParamsSetter
@@ -246,10 +246,10 @@ export default function Page() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center text-sm text-muted-foreground"
           >
-            <p>Invalid or expired link</p>
+            <p>Invalid or Expired link</p>
             <p className="text-xs mt-2 text-muted-foreground/80">
               Please check the link in the email you received. If the link is
-              correct but still doesn't work, contact our support team .
+              correct but still doesn't work, contact our support team.
             </p>
           </motion.div>
         )}
