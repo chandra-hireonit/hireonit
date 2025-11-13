@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import { useConversation } from "@elevenlabs/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2Icon, PhoneIcon, PhoneOffIcon } from "lucide-react";
@@ -30,11 +30,33 @@ export default function Page() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
 
-  const searchParams = useSearchParams();
-  const agentId = searchParams.get("var_agent_id");
-  const userId = searchParams.get("var_user_id");
-  const jobId = searchParams.get("var_job_id");
-  const clientName = searchParams.get("var_client_name");
+  // search params are read inside a Suspense-wrapped client helper to satisfy
+  // Next.js expectations when using `useSearchParams` in the app router.
+  const [agentIdParam, setAgentIdParam] = useState<string | null>(null);
+  const [userIdParam, setUserIdParam] = useState<string | null>(null);
+  const [jobIdParam, setJobIdParam] = useState<string | null>(null);
+  const [clientNameParam, setClientNameParam] = useState<string | null>(null);
+
+  function SearchParamsSetter({
+    setAgentId,
+    setUserId,
+    setJobId,
+    setClientName,
+  }: {
+    setAgentId: (v: string | null) => void;
+    setUserId: (v: string | null) => void;
+    setJobId: (v: string | null) => void;
+    setClientName: (v: string | null) => void;
+  }) {
+    const searchParams = useSearchParams();
+    useEffect(() => {
+      setAgentId(searchParams.get("var_agent_id"));
+      setUserId(searchParams.get("var_user_id"));
+      setJobId(searchParams.get("var_job_id"));
+      setClientName(searchParams.get("var_client_name"));
+    }, [searchParams, setAgentId, setUserId, setJobId, setClientName]);
+    return null;
+  }
 
   const conversation = useConversation({
     onConnect: () => console.log("Connected"),
@@ -54,11 +76,11 @@ export default function Page() {
       setErrorMessage(null);
       await navigator.mediaDevices.getUserMedia({ audio: true });
       await conversation.startSession({
-        agentId: agentId || "unknown_agent",
+        agentId: agentIdParam || "unknown_agent",
         dynamicVariables: {
-          user_id: userId || "unknown_user",
-          job_id: jobId || "unknown_job",
-          client_name: clientName || "unknown_client",
+          user_id: userIdParam || "unknown_user",
+          job_id: jobIdParam || "unknown_job",
+          client_name: clientNameParam || "unknown_client",
         },
         connectionType: "webrtc",
         onStatusChange: (status) => setAgentState(status.status),
@@ -72,7 +94,7 @@ export default function Page() {
         );
       }
     }
-  }, [conversation]);
+  }, [conversation, agentIdParam, userIdParam, jobIdParam, clientNameParam]);
 
   const handleCall = useCallback(() => {
     if (agentState === "disconnected" || agentState === null) {
@@ -101,6 +123,14 @@ export default function Page() {
   return (
     <Card className="flex h-[400px] w-full flex-col items-center justify-center overflow-hidden p-6">
       <div className="flex flex-col items-center gap-6">
+        <Suspense fallback={null}>
+          <SearchParamsSetter
+            setAgentId={setAgentIdParam}
+            setUserId={setUserIdParam}
+            setJobId={setJobIdParam}
+            setClientName={setClientNameParam}
+          />
+        </Suspense>
         <div className="relative size-32">
           <div className="bg-muted relative h-full w-full rounded-full p-1 shadow-[inset_0_2px_8px_rgba(0,0,0,0.1)] dark:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
             <div className="bg-background h-full w-full overflow-hidden rounded-full shadow-[inset_0_0_12px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_0_12px_rgba(0,0,0,0.3)]">
