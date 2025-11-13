@@ -31,6 +31,7 @@ export default function Page() {
   const router = useRouter();
 
   const searchParams = useSearchParams();
+  const agentId = searchParams.get("var_agent_id");
   const userId = searchParams.get("var_user_id");
   const jobId = searchParams.get("var_job_id");
   const clientName = searchParams.get("var_client_name");
@@ -53,7 +54,7 @@ export default function Page() {
       setErrorMessage(null);
       await navigator.mediaDevices.getUserMedia({ audio: true });
       await conversation.startSession({
-        agentId: DEFAULT_AGENT.agentId,
+        agentId: agentId || DEFAULT_AGENT.agentId,
         dynamicVariables: {
           user_id: userId || "unknown_user",
           job_id: jobId || "unknown_job",
