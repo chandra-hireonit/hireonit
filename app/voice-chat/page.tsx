@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useCallback, useState, useEffect, Suspense } from "react";
+import { useCallback, useState, useEffect, Suspense, useRef } from "react";
 import { useConversation } from "@elevenlabs/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2Icon, PhoneIcon, PhoneOffIcon } from "lucide-react";
@@ -41,6 +41,7 @@ export default function Page() {
   >(null);
   const PARAMS_KEY = "voice-chat-params";
   const STATUS_KEY = "voice-chat-status";
+  const paramsLoadedRef = useRef(false);
 
   // initialize interview status from sessionStorage on the client only
   useEffect(() => {
@@ -74,6 +75,28 @@ export default function Page() {
       sessionStorage.setItem(PARAMS_KEY, JSON.stringify(params));
     } catch (e) {
       // ignore
+    }
+  }, [agentIdParam, userIdParam, jobIdParam, clientNameParam]);
+
+  // log missing params after they have been assigned
+  useEffect(() => {
+    // Only log after params have been loaded at least once
+    if (
+      !paramsLoadedRef.current &&
+      (agentIdParam || userIdParam || jobIdParam || clientNameParam)
+    ) {
+      paramsLoadedRef.current = true;
+    }
+
+    if (paramsLoadedRef.current) {
+      const missing: string[] = [];
+      if (!agentIdParam) missing.push("agentIdParam");
+      if (!userIdParam) missing.push("userIdParam");
+      if (!jobIdParam) missing.push("jobIdParam");
+      if (!clientNameParam) missing.push("clientNameParam");
+      if (missing.length > 0) {
+        console.log("Missing params:", missing.join(", "));
+      }
     }
   }, [agentIdParam, userIdParam, jobIdParam, clientNameParam]);
 
