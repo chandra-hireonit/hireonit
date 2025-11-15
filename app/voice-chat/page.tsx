@@ -36,6 +36,46 @@ export default function Page() {
   const [userIdParam, setUserIdParam] = useState<string | null>(null);
   const [jobIdParam, setJobIdParam] = useState<string | null>(null);
   const [clientNameParam, setClientNameParam] = useState<string | null>(null);
+  const [interviewStatus, setInterviewStatus] = useState<
+    "Incomplete" | "In Progress" | "Complete" | null
+  >(null);
+  const PARAMS_KEY = "voice-chat-params";
+  const STATUS_KEY = "voice-chat-status";
+
+  // initialize interview status from sessionStorage on the client only
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(STATUS_KEY);
+      if (
+        stored === "In Progress" ||
+        stored === "Complete" ||
+        stored === "Incomplete"
+      ) {
+        setInterviewStatus(stored as "Incomplete" | "In Progress" | "Complete");
+      } else {
+        sessionStorage.setItem(STATUS_KEY, "Incomplete");
+        setInterviewStatus("Incomplete");
+      }
+    } catch (e) {
+      // ignore sessionStorage errors — default to Incomplete on client
+      setInterviewStatus("Incomplete");
+    }
+  }, []);
+
+  // persist query params to sessionStorage whenever they change
+  useEffect(() => {
+    try {
+      const params = {
+        agentId: agentIdParam,
+        userId: userIdParam,
+        jobId: jobIdParam,
+        clientName: clientNameParam,
+      };
+      sessionStorage.setItem(PARAMS_KEY, JSON.stringify(params));
+    } catch (e) {
+      // ignore
+    }
+  }, [agentIdParam, userIdParam, jobIdParam, clientNameParam]);
 
   function SearchParamsSetter({
     setAgentId,
@@ -50,23 +90,46 @@ export default function Page() {
   }) {
     const searchParams = useSearchParams();
     useEffect(() => {
-      setAgentId(searchParams.get("var_agent_id"));
+      setAgentId(searchParams.get("agent_id"));
       setUserId(searchParams.get("var_user_id"));
       setJobId(searchParams.get("var_job_id"));
       setClientName(searchParams.get("var_client_name"));
     }, [searchParams, setAgentId, setUserId, setJobId, setClientName]);
+    // console.log("SearchParamsSetter rendered");
+    // console.log("Params:", {
+    //   agentId: searchParams.get("agent_id"),
+    //   userId: searchParams.get("var_user_id"),
+    //   jobId: searchParams.get("var_job_id"),
+    //   clientName: searchParams.get("var_client_name"),
+    // });
     return null;
   }
 
   const conversation = useConversation({
-    onConnect: () => console.log("Connected"),
+    onConnect: () => {
+      // console.log("Connected");
+      try {
+        sessionStorage.setItem(STATUS_KEY, "In Progress");
+      } catch (e) {
+        /* ignore */
+      }
+      setInterviewStatus("In Progress");
+    },
     onDisconnect: () => {
-      console.log("Disconnected");
+      // console.log("Disconnected");
+      try {
+        sessionStorage.setItem(STATUS_KEY, "Complete");
+      } catch (e) {
+        /* ignore */
+      }
+      setInterviewStatus("Complete");
       router.push("/thankyou");
     },
-    onMessage: (message) => console.log("Message:", message),
+    onMessage: (message) => {
+      // console.log("Message:", message);
+    },
     onError: (error) => {
-      console.error("Error:", error);
+      // console.error("Error:", error);
       setAgentState("disconnected");
     },
   });
@@ -86,7 +149,7 @@ export default function Page() {
         onStatusChange: (status) => setAgentState(status.status),
       });
     } catch (error) {
-      console.error("Error starting conversation:", error);
+      // console.error("Error starting conversation:", error);
       setAgentState("disconnected");
       if (error instanceof DOMException && error.name === "NotAllowedError") {
         setErrorMessage(
@@ -199,47 +262,61 @@ export default function Page() {
         </div>
 
         {hasAllParams ? (
-          <Button
-            onClick={handleCall}
-            disabled={isTransitioning}
-            size="icon"
-            variant={isCallActive ? "secondary" : "default"}
-            className="h-12 w-12 rounded-full"
-          >
-            <AnimatePresence mode="wait">
-              {isTransitioning ? (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0, rotate: 0 }}
-                  animate={{ opacity: 1, rotate: 360 }}
-                  exit={{ opacity: 0 }}
-                  transition={{
-                    rotate: { duration: 1, repeat: Infinity, ease: "linear" },
-                  }}
-                >
-                  <Loader2Icon className="h-5 w-5" />
-                </motion.div>
-              ) : isCallActive ? (
-                <motion.div
-                  key="end"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.5 }}
-                >
-                  <PhoneOffIcon className="h-5 w-5" />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="start"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.5 }}
-                >
-                  <PhoneIcon className="h-5 w-5" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Button>
+          interviewStatus !== "Complete" ? (
+            <Button
+              onClick={handleCall}
+              disabled={isTransitioning}
+              size="icon"
+              variant={isCallActive ? "secondary" : "default"}
+              className="h-12 w-12 rounded-full"
+            >
+              <AnimatePresence mode="wait">
+                {isTransitioning ? (
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0, rotate: 0 }}
+                    animate={{ opacity: 1, rotate: 360 }}
+                    exit={{ opacity: 0 }}
+                    transition={{
+                      rotate: { duration: 1, repeat: Infinity, ease: "linear" },
+                    }}
+                  >
+                    <Loader2Icon className="h-5 w-5" />
+                  </motion.div>
+                ) : isCallActive ? (
+                  <motion.div
+                    key="end"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.5 }}
+                  >
+                    <PhoneOffIcon className="h-5 w-5" />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="start"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.5 }}
+                  >
+                    <PhoneIcon className="h-5 w-5" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Button>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center text-sm text-muted-foreground"
+            >
+              <p className="font-medium">Interview already submitted</p>
+              <p className="text-xs mt-2 text-muted-foreground/80">
+                Our records show this interview is already submitted. If you
+                believe this is an error, contact support.
+              </p>
+            </motion.div>
+          )
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
