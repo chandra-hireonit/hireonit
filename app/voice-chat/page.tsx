@@ -176,7 +176,7 @@ export default function Page() {
       setAgentState("disconnected");
       if (error instanceof DOMException && error.name === "NotAllowedError") {
         setErrorMessage(
-          "Please enable microphone permissions in your browser."
+          "Please enable microphone permissions in your browser.",
         );
       }
     }
@@ -207,7 +207,7 @@ export default function Page() {
   }, [conversation]);
 
   const hasAllParams = Boolean(
-    agentIdParam && userIdParam && jobIdParam && clientNameParam
+    agentIdParam && userIdParam && jobIdParam && clientNameParam,
   );
 
   return (
@@ -269,7 +269,7 @@ export default function Page() {
                   className={cn(
                     "h-2 w-2 rounded-full transition-all duration-300",
                     agentState === "connected" && "bg-green-500",
-                    isTransitioning && "bg-primary/60 animate-pulse"
+                    isTransitioning && "bg-primary/60 animate-pulse",
                   )}
                 />
                 <span className="text-sm capitalize">

@@ -1,10 +1,28 @@
 "use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { CheckCircleIcon } from "lucide-react";
-
 import { Card } from "@/components/ui/card";
 
 export default function ThankYouPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const clientName = localStorage.getItem("var_client_name");
+
+    const timer = setTimeout(() => {
+      if (clientName) {
+        window.location.href = `https://${clientName}.ambitionhire.ai/candidate/dashboard`;
+      } else {
+        console.error("Client name not found in localStorage");
+      }
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [router]);
+
   return (
     <Card className="flex h-[400px] w-full flex-col items-center justify-center overflow-hidden p-6">
       <div className="flex flex-col items-center gap-6">
@@ -26,6 +44,9 @@ export default function ThankYouPage() {
           <p className="text-muted-foreground text-sm">
             Your interview has been completed successfully. We appreciate your
             time and effort.
+          </p>
+          <p className="text-xs text-muted-foreground mt-4 italic">
+            Redirecting to your dashboard in 5 seconds...
           </p>
         </motion.div>
 
