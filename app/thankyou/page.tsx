@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react"; // Added useState
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { CheckCircleIcon } from "lucide-react";
@@ -8,20 +8,33 @@ import { Card } from "@/components/ui/card";
 
 export default function ThankYouPage() {
   const router = useRouter();
+  // 1. Initialize state for the countdown
+  const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
     const clientName = localStorage.getItem("var_client_name");
 
-    const timer = setTimeout(() => {
+    // 2. Interval to handle the visual countdown
+    const timer = setInterval(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    // 3. Timeout to handle the actual redirection
+    const redirectTimeout = setTimeout(() => {
       if (clientName) {
         window.location.href = `https://${clientName}.ambitionhire.ai/candidate/dashboard`;
       } else {
         console.error("Client name not found in localStorage");
+        // Optional: Redirect to a fallback or show an error
       }
     }, 5000);
 
-    return () => clearTimeout(timer);
-  }, [router]);
+    // Cleanup both the interval and the timeout
+    return () => {
+      clearInterval(timer);
+      clearTimeout(redirectTimeout);
+    };
+  }, []);
 
   return (
     <Card className="flex h-[400px] w-full flex-col items-center justify-center overflow-hidden p-6">
@@ -45,8 +58,11 @@ export default function ThankYouPage() {
             Your interview has been completed successfully. We appreciate your
             time and effort.
           </p>
+
+          {/* 4. Display the dynamic countdown state here */}
           <p className="text-xs text-muted-foreground mt-4 italic">
-            Redirecting to your dashboard in 5 seconds...
+            Redirecting to your dashboard in {countdown}{" "}
+            {countdown === 1 ? "second" : "seconds"}...
           </p>
         </motion.div>
 
