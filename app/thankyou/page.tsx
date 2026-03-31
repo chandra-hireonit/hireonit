@@ -12,7 +12,7 @@ export default function ThankYouPage() {
   const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
-    const clientName = localStorage.getItem("var_client_name");
+    const clientName = sessionStorage.getItem("var_client_name");
 
     // 2. Interval to handle the visual countdown
     const timer = setInterval(() => {
