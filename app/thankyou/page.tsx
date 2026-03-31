@@ -55,7 +55,7 @@ export default function ThankYouPage() {
           {isValidClient ? (
             <CheckCircleIcon className="h-16 w-16 text-green-500" />
           ) : (
-            <AlertCircleIcon className="h-16 w-16 text-amber-500" />
+            <CheckCircleIcon className="h-16 w-16 text-amber-500" />
           )}
         </motion.div>
 
