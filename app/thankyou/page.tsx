@@ -3,39 +3,42 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { CheckCircleIcon, AlertCircleIcon } from "lucide-react";
+import { CheckCircleIcon, XCircleIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 export default function ThankYouPage() {
   const router = useRouter();
   const [countdown, setCountdown] = useState(5);
-  // Track if we should show the redirection UI or the "safe to close" UI
+  // Track if we have a valid client name to redirect to
   const [isValidClient, setIsValidClient] = useState(true);
 
   useEffect(() => {
-    const clientName = sessionStorage.getItem("clientName");
-    console.log(clientName);
+    const paramsString = sessionStorage.getItem("voice-chat-params");
+    let clientName = "";
 
-    // Check if clientName is missing, null, or just an empty string
+    try {
+      if (paramsString) {
+        const params = JSON.parse(paramsString);
+        clientName = params.clientName;
+      }
+    } catch (error) {
+      console.error("Error parsing voice-chat-params:", error);
+    }
+
+    // If clientName is missing or invalid, stop the timer logic
     if (!clientName || clientName.trim() === "") {
       setIsValidClient(false);
-      return; // Exit early; do not start timers
+      return;
     }
 
     // Interval to handle the visual countdown
     const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
+      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
     // Timeout to handle the actual redirection
     const redirectTimeout = setTimeout(() => {
-      window.location.href = `https://${clientName}.ambitionhire.ai/candidate/dashboard`;
+      window.location.href = `https://${clientName.toLowerCase()}.ambitionhire.ai/candidate/dashboard`;
     }, 5000);
 
     // Cleanup
@@ -53,11 +56,7 @@ export default function ThankYouPage() {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          {isValidClient ? (
-            <CheckCircleIcon className="h-16 w-16 text-green-500" />
-          ) : (
-            <CheckCircleIcon className="h-16 w-16 text-amber-500" />
-          )}
+          <CheckCircleIcon className="h-16 w-16 text-green-500" />
         </motion.div>
 
         <motion.div
@@ -66,13 +65,10 @@ export default function ThankYouPage() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="flex flex-col items-center gap-2 text-center"
         >
-          <h1 className="text-2xl font-bold">
-            {isValidClient ? "Thank You!" : "Session Completed"}
-          </h1>
+          <h1 className="text-2xl font-bold">Thank You!</h1>
           <p className="text-muted-foreground text-sm">
-            {isValidClient
-              ? "Your interview has been completed successfully. We appreciate your time and effort."
-              : "Your progress has been saved."}
+            Your interview has been completed successfully. We appreciate your
+            time and effort.
           </p>
 
           {isValidClient ? (
@@ -81,7 +77,7 @@ export default function ThankYouPage() {
               {countdown === 1 ? "second" : "seconds"}...
             </p>
           ) : (
-            <p className="text-xs text-muted-foreground mt-4 font-medium">
+            <p className="text-sm text-blue-600 mt-4 font-medium">
               You can now safely close this window.
             </p>
           )}
