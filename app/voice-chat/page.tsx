@@ -42,28 +42,26 @@ export default function Page() {
   const PARAMS_KEY = "voice-chat-params";
   const STATUS_KEY = "voice-chat-status";
   const paramsLoadedRef = useRef(false);
-
-  // initialize interview status from localStorage on the client only
+  // Replace your existing useEffect for loading the status with this:
   useEffect(() => {
+    if (!userIdParam || !jobIdParam) return;
+
+    const key = getStatusKey(userIdParam, jobIdParam);
+    if (!key) return;
+
     try {
-      const stored = localStorage.getItem(STATUS_KEY);
-      if (
-        stored === "In Progress" ||
-        stored === "Complete" ||
-        stored === "Incomplete"
-      ) {
-        setInterviewStatus(stored as "Incomplete" | "In Progress" | "Complete");
+      const stored = sessionStorage.getItem(key);
+      if (stored === "Complete") {
+        setInterviewStatus("Complete");
       } else {
-        localStorage.setItem(STATUS_KEY, "Incomplete");
         setInterviewStatus("Incomplete");
       }
     } catch (e) {
-      // ignore localStorage errors — default to Incomplete on client
       setInterviewStatus("Incomplete");
     }
-  }, []);
+  }, [userIdParam, jobIdParam]); // Runs whenever the IDs change
 
-  // persist query params to localStorage whenever they change
+  // persist query params to sessionStorage whenever they change
   useEffect(() => {
     try {
       const params = {
@@ -72,7 +70,7 @@ export default function Page() {
         jobId: jobIdParam,
         clientName: clientNameParam,
       };
-      localStorage.setItem(PARAMS_KEY, JSON.stringify(params));
+      sessionStorage.setItem(PARAMS_KEY, JSON.stringify(params));
     } catch (e) {
       // ignore
     }
@@ -128,22 +126,26 @@ export default function Page() {
     return null;
   }
 
+  // Add this helper function outside your component or at the top of the file
+  const getStatusKey = (userId: string | null, jobId: string | null) => {
+    if (!userId || !jobId) return null;
+    return `interview-status-${userId}-${jobId}`;
+  };
+
   const conversation = useConversation({
     onConnect: () => {
       // console.log("Connected");
       try {
-        localStorage.setItem(STATUS_KEY, "In Progress");
+        sessionStorage.setItem(STATUS_KEY, "In Progress");
       } catch (e) {
         /* ignore */
       }
       setInterviewStatus("In Progress");
     },
     onDisconnect: () => {
-      // console.log("Disconnected");
-      try {
-        localStorage.setItem(STATUS_KEY, "Complete");
-      } catch (e) {
-        /* ignore */
+      const key = getStatusKey(userIdParam, jobIdParam);
+      if (key) {
+        sessionStorage.setItem(key, "Complete");
       }
       setInterviewStatus("Complete");
       router.push("/thankyou");
@@ -285,61 +287,47 @@ export default function Page() {
         </div>
 
         {hasAllParams ? (
-          interviewStatus !== "Complete" ? (
-            <Button
-              onClick={handleCall}
-              disabled={isTransitioning}
-              size="icon"
-              variant={isCallActive ? "secondary" : "default"}
-              className="h-12 w-12 rounded-full"
-            >
-              <AnimatePresence mode="wait">
-                {isTransitioning ? (
-                  <motion.div
-                    key="loading"
-                    initial={{ opacity: 0, rotate: 0 }}
-                    animate={{ opacity: 1, rotate: 360 }}
-                    exit={{ opacity: 0 }}
-                    transition={{
-                      rotate: { duration: 1, repeat: Infinity, ease: "linear" },
-                    }}
-                  >
-                    <Loader2Icon className="h-5 w-5" />
-                  </motion.div>
-                ) : isCallActive ? (
-                  <motion.div
-                    key="end"
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.5 }}
-                  >
-                    <PhoneOffIcon className="h-5 w-5" />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="start"
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.5 }}
-                  >
-                    <PhoneIcon className="h-5 w-5" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </Button>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center text-sm text-muted-foreground"
-            >
-              <p className="font-medium">Interview already submitted</p>
-              <p className="text-xs mt-2 text-muted-foreground/80">
-                Our records show this interview is already submitted. If you
-                believe this is an error, contact support.
-              </p>
-            </motion.div>
-          )
+          <Button
+            onClick={handleCall}
+            disabled={isTransitioning}
+            size="icon"
+            variant={isCallActive ? "secondary" : "default"}
+            className="h-12 w-12 rounded-full"
+          >
+            <AnimatePresence mode="wait">
+              {isTransitioning ? (
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0, rotate: 0 }}
+                  animate={{ opacity: 1, rotate: 360 }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    rotate: { duration: 1, repeat: Infinity, ease: "linear" },
+                  }}
+                >
+                  <Loader2Icon className="h-5 w-5" />
+                </motion.div>
+              ) : isCallActive ? (
+                <motion.div
+                  key="end"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                >
+                  <PhoneOffIcon className="h-5 w-5" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="start"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                >
+                  <PhoneIcon className="h-5 w-5" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Button>
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
