@@ -43,10 +43,10 @@ export default function Page() {
   const STATUS_KEY = "voice-chat-status";
   const paramsLoadedRef = useRef(false);
 
-  // initialize interview status from sessionStorage on the client only
+  // initialize interview status from localStorage on the client only
   useEffect(() => {
     try {
-      const stored = sessionStorage.getItem(STATUS_KEY);
+      const stored = localStorage.getItem(STATUS_KEY);
       if (
         stored === "In Progress" ||
         stored === "Complete" ||
@@ -54,16 +54,16 @@ export default function Page() {
       ) {
         setInterviewStatus(stored as "Incomplete" | "In Progress" | "Complete");
       } else {
-        sessionStorage.setItem(STATUS_KEY, "Incomplete");
+        localStorage.setItem(STATUS_KEY, "Incomplete");
         setInterviewStatus("Incomplete");
       }
     } catch (e) {
-      // ignore sessionStorage errors — default to Incomplete on client
+      // ignore localStorage errors — default to Incomplete on client
       setInterviewStatus("Incomplete");
     }
   }, []);
 
-  // persist query params to sessionStorage whenever they change
+  // persist query params to localStorage whenever they change
   useEffect(() => {
     try {
       const params = {
@@ -72,7 +72,7 @@ export default function Page() {
         jobId: jobIdParam,
         clientName: clientNameParam,
       };
-      sessionStorage.setItem(PARAMS_KEY, JSON.stringify(params));
+      localStorage.setItem(PARAMS_KEY, JSON.stringify(params));
     } catch (e) {
       // ignore
     }
@@ -132,7 +132,7 @@ export default function Page() {
     onConnect: () => {
       // console.log("Connected");
       try {
-        sessionStorage.setItem(STATUS_KEY, "In Progress");
+        localStorage.setItem(STATUS_KEY, "In Progress");
       } catch (e) {
         /* ignore */
       }
@@ -141,7 +141,7 @@ export default function Page() {
     onDisconnect: () => {
       // console.log("Disconnected");
       try {
-        sessionStorage.setItem(STATUS_KEY, "Complete");
+        localStorage.setItem(STATUS_KEY, "Complete");
       } catch (e) {
         /* ignore */
       }
