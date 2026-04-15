@@ -1,22 +1,10 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useCallback, useState, useEffect, Suspense, useRef } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import { useConversation } from "@elevenlabs/react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Loader2Icon, PhoneIcon, PhoneOffIcon } from "lucide-react";
-
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Orb } from "@/components/ui/orb";
-import { ShimmeringText } from "@/components/ui/shimmering-text";
 import { useSearchParams } from "next/navigation";
 
-const DEFAULT_AGENT = {
-  agentId: "agent_01k03sadvvf8vakbhkfzws1yn5",
-  name: "Hire On It Interview Bot",
-  description: "Tap to start a voice interview with Hire On It.",
-};
+import { VoiceChatInterface } from "@/components/voice-chat-interface";
 
 type AgentState =
   | "disconnected"
@@ -39,64 +27,64 @@ export default function Page() {
   const [interviewStatus, setInterviewStatus] = useState<
     "Incomplete" | "In Progress" | "Complete" | null
   >(null);
-  const PARAMS_KEY = "voice-chat-params";
-  const STATUS_KEY = "voice-chat-status";
-  const paramsLoadedRef = useRef(false);
-  // Replace your existing useEffect for loading the status with this:
+  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+  const [sessionMessage, setSessionMessage] = useState<string | null>(null);
+
   useEffect(() => {
     if (!userIdParam || !jobIdParam) return;
 
-    const key = getStatusKey(userIdParam, jobIdParam);
-    if (!key) return;
+    const fetchInterviewStatus = async () => {
+      setIsLoadingStatus(true);
+      try {
+        const response = await fetch(
+          "https://cmyou45.app.n8n.cloud/webhook/e1d77ba9-116a-466c-bea0-114c51fd932d",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              user_id: userIdParam,
+              job_id: jobIdParam,
+              client_name: clientNameParam,
+            }),
+          },
+        );
 
-    try {
-      const stored = sessionStorage.getItem(key);
-      if (stored === "Complete") {
-        setInterviewStatus("Complete");
-      } else {
+        if (!response.ok) {
+          setInterviewStatus("Incomplete");
+          return;
+        }
+
+        const data = await response.json();
+        console.log("Interview status response:", data);
+        // API returns an array with an object containing isValidSession and message
+        const result = Array.isArray(data) ? data[0] : data;
+        console.log("Parsed interview status result:", result);
+
+        if (result?.message) {
+          setSessionMessage(result.message);
+        }
+
+        if (result?.isValidSession) {
+          setInterviewStatus("Incomplete");
+          console.log("Valid session - interview can proceed.");
+        } else {
+          setInterviewStatus("Complete");
+          console.log(
+            "Invalid session - interview already completed or expired.",
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching interview status:", error);
         setInterviewStatus("Incomplete");
+      } finally {
+        setIsLoadingStatus(false);
       }
-    } catch (e) {
-      setInterviewStatus("Incomplete");
-    }
-  }, [userIdParam, jobIdParam]); // Runs whenever the IDs change
+    };
 
-  // persist query params to sessionStorage whenever they change
-  useEffect(() => {
-    try {
-      const params = {
-        agentId: agentIdParam,
-        userId: userIdParam,
-        jobId: jobIdParam,
-        clientName: clientNameParam,
-      };
-      sessionStorage.setItem(PARAMS_KEY, JSON.stringify(params));
-    } catch (e) {
-      // ignore
-    }
-  }, [agentIdParam, userIdParam, jobIdParam, clientNameParam]);
-
-  // log missing params after they have been assigned
-  useEffect(() => {
-    // Only log after params have been loaded at least once
-    if (
-      !paramsLoadedRef.current &&
-      (agentIdParam || userIdParam || jobIdParam || clientNameParam)
-    ) {
-      paramsLoadedRef.current = true;
-    }
-
-    if (paramsLoadedRef.current) {
-      const missing: string[] = [];
-      if (!agentIdParam) missing.push("agentIdParam");
-      if (!userIdParam) missing.push("userIdParam");
-      if (!jobIdParam) missing.push("jobIdParam");
-      if (!clientNameParam) missing.push("clientNameParam");
-      if (missing.length > 0) {
-        console.log("Missing params:", missing.join(", "));
-      }
-    }
-  }, [agentIdParam, userIdParam, jobIdParam, clientNameParam]);
+    fetchInterviewStatus();
+  }, [userIdParam, jobIdParam]);
 
   function SearchParamsSetter({
     setAgentId,
@@ -116,45 +104,18 @@ export default function Page() {
       setJobId(searchParams.get("var_job_id"));
       setClientName(searchParams.get("var_client_name"));
     }, [searchParams, setAgentId, setUserId, setJobId, setClientName]);
-    // console.log("SearchParamsSetter rendered");
-    // console.log("Params:", {
-    //   agentId: searchParams.get("agent_id"),
-    //   userId: searchParams.get("var_user_id"),
-    //   jobId: searchParams.get("var_job_id"),
-    //   clientName: searchParams.get("var_client_name"),
-    // });
     return null;
   }
 
-  // Add this helper function outside your component or at the top of the file
-  const getStatusKey = (userId: string | null, jobId: string | null) => {
-    if (!userId || !jobId) return null;
-    return `interview-status-${userId}-${jobId}`;
-  };
-
   const conversation = useConversation({
     onConnect: () => {
-      // console.log("Connected");
-      try {
-        sessionStorage.setItem(STATUS_KEY, "In Progress");
-      } catch (e) {
-        /* ignore */
-      }
       setInterviewStatus("In Progress");
     },
     onDisconnect: () => {
-      const key = getStatusKey(userIdParam, jobIdParam);
-      if (key) {
-        sessionStorage.setItem(key, "Complete");
-      }
       setInterviewStatus("Complete");
       router.push("/thankyou");
     },
-    onMessage: (message) => {
-      // console.log("Message:", message);
-    },
     onError: (error) => {
-      // console.error("Error:", error);
       setAgentState("disconnected");
     },
   });
@@ -174,7 +135,6 @@ export default function Page() {
         onStatusChange: (status) => setAgentState(status.status),
       });
     } catch (error) {
-      // console.error("Error starting conversation:", error);
       setAgentState("disconnected");
       if (error instanceof DOMException && error.name === "NotAllowedError") {
         setErrorMessage(
@@ -213,135 +173,28 @@ export default function Page() {
   );
 
   return (
-    <Card className="flex h-screen w-screen flex-col items-center justify-center overflow-hidden p-6 rounded-none border-0">
-      <div className="flex flex-col items-center gap-6">
-        <Suspense fallback={null}>
+    <Suspense fallback={null}>
+      <VoiceChatInterface
+        agentState={agentState}
+        errorMessage={errorMessage}
+        isCallActive={isCallActive}
+        isTransitioning={isTransitioning}
+        hasAllParams={hasAllParams}
+        isValidSession={interviewStatus === "Incomplete"}
+        isLoadingStatus={isLoadingStatus}
+        sessionMessage={sessionMessage}
+        onCallClick={handleCall}
+        getInputVolume={getInputVolume}
+        getOutputVolume={getOutputVolume}
+        searchParamsElement={
           <SearchParamsSetter
             setAgentId={setAgentIdParam}
             setUserId={setUserIdParam}
             setJobId={setJobIdParam}
             setClientName={setClientNameParam}
           />
-        </Suspense>
-        <div className="relative size-32">
-          <div className="bg-muted relative h-full w-full rounded-full p-1 shadow-[inset_0_2px_8px_rgba(0,0,0,0.1)] dark:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
-            <div className="bg-background h-full w-full overflow-hidden rounded-full shadow-[inset_0_0_12px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_0_12px_rgba(0,0,0,0.3)]">
-              <Orb
-                className="h-full w-full"
-                volumeMode="manual"
-                getInputVolume={getInputVolume}
-                getOutputVolume={getOutputVolume}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center gap-2">
-          <h2 className="text-xl font-semibold">{DEFAULT_AGENT.name}</h2>
-          <AnimatePresence mode="wait">
-            {errorMessage ? (
-              <motion.p
-                key="error"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="text-destructive text-center text-sm"
-              >
-                {errorMessage}
-              </motion.p>
-            ) : agentState === "disconnected" || agentState === null ? (
-              <motion.p
-                key="disconnected"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="text-muted-foreground text-sm"
-              >
-                {DEFAULT_AGENT.description}
-              </motion.p>
-            ) : (
-              <motion.div
-                key="status"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="flex items-center gap-2"
-              >
-                <div
-                  className={cn(
-                    "h-2 w-2 rounded-full transition-all duration-300",
-                    agentState === "connected" && "bg-green-500",
-                    isTransitioning && "bg-primary/60 animate-pulse",
-                  )}
-                />
-                <span className="text-sm capitalize">
-                  {isTransitioning ? (
-                    <ShimmeringText text={agentState} />
-                  ) : (
-                    <span className="text-green-600">Connected</span>
-                  )}
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {hasAllParams ? (
-          <Button
-            onClick={handleCall}
-            disabled={isTransitioning}
-            size="icon"
-            variant={isCallActive ? "secondary" : "default"}
-            className="h-12 w-12 rounded-full"
-          >
-            <AnimatePresence mode="wait">
-              {isTransitioning ? (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0, rotate: 0 }}
-                  animate={{ opacity: 1, rotate: 360 }}
-                  exit={{ opacity: 0 }}
-                  transition={{
-                    rotate: { duration: 1, repeat: Infinity, ease: "linear" },
-                  }}
-                >
-                  <Loader2Icon className="h-5 w-5" />
-                </motion.div>
-              ) : isCallActive ? (
-                <motion.div
-                  key="end"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.5 }}
-                >
-                  <PhoneOffIcon className="h-5 w-5" />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="start"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.5 }}
-                >
-                  <PhoneIcon className="h-5 w-5" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Button>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center text-sm text-muted-foreground"
-          >
-            <p>Invalid or Expired link</p>
-            <p className="text-xs mt-2 text-muted-foreground/80">
-              Please check the link in the email you received. If the link is
-              correct but still doesn't work, contact our support team.
-            </p>
-          </motion.div>
-        )}
-      </div>
-    </Card>
+        }
+      />
+    </Suspense>
   );
 }
