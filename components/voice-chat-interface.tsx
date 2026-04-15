@@ -1,7 +1,7 @@
 "use client";
 import { Suspense } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2Icon, PhoneIcon } from "lucide-react";
+import { Loader2Icon, PhoneIcon, PhoneOffIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,15 @@ export function VoiceChatInterface({
   getOutputVolume,
   searchParamsElement,
 }: VoiceChatInterfaceProps) {
+  console.log("=== VoiceChatInterface Render ===");
+  console.log(
+    "isTransitioning:",
+    isTransitioning,
+    "isCallActive:",
+    isCallActive,
+    "hasAllParams:",
+    hasAllParams,
+  );
   return (
     <Card className="flex h-screen w-screen flex-col items-center justify-center overflow-hidden p-6 rounded-none border-0">
       <div className="flex flex-col items-center gap-6">
@@ -154,7 +163,11 @@ export function VoiceChatInterface({
                   animate={{ opacity: 1, rotate: 360 }}
                   exit={{ opacity: 0 }}
                   transition={{
-                    rotate: { duration: 1, repeat: Infinity, ease: "linear" },
+                    rotate: {
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "linear",
+                    },
                   }}
                 >
                   <Loader2Icon className="h-5 w-5" />
@@ -166,7 +179,7 @@ export function VoiceChatInterface({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.5 }}
                 >
-                  <PhoneIcon className="h-5 w-5" />
+                  <PhoneOffIcon className="h-5 w-5" />
                 </motion.div>
               ) : (
                 <motion.div

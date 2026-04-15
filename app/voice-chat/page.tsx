@@ -29,6 +29,7 @@ export default function Page() {
   >(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [sessionMessage, setSessionMessage] = useState<string | null>(null);
+  const [isValidSession, setIsValidSession] = useState(true);
 
   useEffect(() => {
     if (!userIdParam || !jobIdParam) return;
@@ -67,9 +68,11 @@ export default function Page() {
         }
 
         if (result?.isValidSession) {
+          setIsValidSession(true);
           setInterviewStatus("Incomplete");
           console.log("Valid session - interview can proceed.");
         } else {
+          setIsValidSession(false);
           setInterviewStatus("Complete");
           console.log(
             "Invalid session - interview already completed or expired.",
@@ -180,7 +183,7 @@ export default function Page() {
         isCallActive={isCallActive}
         isTransitioning={isTransitioning}
         hasAllParams={hasAllParams}
-        isValidSession={interviewStatus === "Incomplete"}
+        isValidSession={isValidSession}
         isLoadingStatus={isLoadingStatus}
         sessionMessage={sessionMessage}
         onCallClick={handleCall}
