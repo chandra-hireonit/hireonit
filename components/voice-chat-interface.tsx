@@ -11,8 +11,8 @@ import { ShimmeringText } from "@/components/ui/shimmering-text";
 
 const DEFAULT_AGENT = {
   agentId: "agent_01k03sadvvf8vakbhkfzws1yn5",
-  name: "Hire On It Interview Bot",
-  description: "Tap to start a voice interview with Hire On It.",
+  name: "AI Interview Bot",
+  description: "Tap here to start your interview",
 };
 
 type AgentState =
